@@ -47,7 +47,11 @@ class NipopowAlgos(val chainSettings: ChainSettings) {
       require(prevInterlinks.nonEmpty, "Interlinks vector could not be empty in case of non-genesis header")
       val genesis = prevInterlinks.head
       val tail = prevInterlinks.tail
-      val prevLevel = maxLevelOf(prevHeader)
+      
+      // part of the reproducer re i1387 and i1023 (and possibly a separate sporadic bug)
+      // from: https://github.com/ergoplatform/ergo/pull/1040/files#diff-5db9ab3975b9fbbdab0f82086b2f8d08ccf52768f6dbf50c99d6e5a65921b634R39
+      // if we don't apply '& 0xFF', the looped test will be aborted by "Interlinks should have the correct structure"
+      val prevLevel = maxLevelOf(prevHeader) & 0xFF
       if (prevLevel > 0) {
         (genesis +: tail.dropRight(prevLevel)) ++ Seq.fill(prevLevel)(prevHeader.id)
       } else {
