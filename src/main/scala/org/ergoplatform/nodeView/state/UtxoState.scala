@@ -142,7 +142,7 @@ class UtxoState(override val persistentProver: PersistentBatchAVLProver[Digest32
             val emissionBox = extractEmissionBox(fb)
             val meta = metadata(idToVersion(fb.id), fb.header.stateRoot, emissionBox, newStateContext)
 
-            var proofBytes = persistentProver.generateProofAndUpdateStorage(meta)
+            val proofBytes = persistentProver.generateProofAndUpdateStorage(meta)
 
             if (!store.get(org.ergoplatform.core.idToBytes(fb.id))
                   .exists(w => java.util.Arrays.equals(w, fb.header.stateRoot))) {
@@ -153,8 +153,16 @@ class UtxoState(override val persistentProver: PersistentBatchAVLProver[Digest32
               throw new Exception("Calculated stateRoot is not equal to the declared one")
             }
 
-            var proofHash = ADProofs.proofDigest(proofBytes)
+            val proofHash = ADProofs.proofDigest(proofBytes)
 
+            if(!java.util.Arrays.equals(fb.header.ADProofsRoot, proofHash)) {
+              throw new Exception("Regenerated proofHash is not equal to the declared one")
+            }            
+
+/* Disable this retry-once-on-failure workaround
+   re https://github.com/ergoplatform/ergo/issues/1387
+   re https://github.com/ergoplatform/ergo/issues/1023
+   
             if (!java.util.Arrays.equals(fb.header.ADProofsRoot, proofHash)) {
 
               log.error("Calculated proofHash is not equal to the declared one, doing another attempt")
@@ -192,7 +200,7 @@ class UtxoState(override val persistentProver: PersistentBatchAVLProver[Digest32
                   throw new Exception("Can't generate state changes on proof regeneration ", e)
               }
             }
-
+*/
             if (fb.adProofs.isEmpty) {
               if (fb.height >= estimatedTip.getOrElse(Int.MaxValue) - ergoSettings.nodeSettings.adProofsSuffixLength) {
                 val adProofs = ADProofs(fb.header.id, proofBytes)
