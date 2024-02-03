@@ -29,10 +29,75 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 import scala.util.Try
 
-
 class UtxoStateSpecification extends ErgoPropertyTest with ErgoTransactionGenerators {
 
   private val emptyModifierId: ModifierId = bytesToId(Array.fill(32)(0.toByte))
+
+// ------------------------------------------------------------------------------------------------  
+  /**
+    * 1:1 copy of the test-case further down, placed in a loop.
+    * Execute the test from the cli within an outer loop until failure, example cli command:
+    *
+    * sbt compile && time while [ $? -eq 0 ]; do sbt "testOnly *UtxoStateSpecification -- -z looper"; done
+    * 
+    * It takes usually less than 10min. to trigger the error.
+    * Tested on: Ryzen 2700X, Windows 10, docker ubuntu-22.04 dev-container
+    */
+  property("concurrent applyModifier() and proofsForTransactions() looper") {
+
+    implicit val ec: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(4))
+
+for (i <- 1 to 100) {
+
+    println(f"4ubuntu looper: $i%03d")
+
+
+    var bh = BoxHolder(Seq(genesisEmissionBox))
+    var us = createUtxoState(bh, parameters)
+
+    var height: Int = GenesisHeight
+    // generate chain of correct full blocks
+    val chain = (0 until 10) map { _ =>
+      val header = defaultHeaderGen.sample.value
+      val t = validTransactionsFromBoxHolder(bh, new RandomWrapper(Some(height)))
+      val txs = t._1
+      bh = t._2
+      val (adProofBytes, adDigest) = us.proofsForTransactions(txs).get
+      val realHeader = header.copy(stateRoot = adDigest,
+        ADProofsRoot = ADProofs.proofDigest(adProofBytes),
+        height = height,
+        parentId = us.stateContext.lastHeaderOpt.map(_.id).getOrElse(Header.GenesisParentId))
+      val adProofs = ADProofs(realHeader.id, adProofBytes)
+      height = height + 1
+      val bt = BlockTransactions(realHeader.id, Header.InitialVersion, txs)
+      val fb = ErgoFullBlock(realHeader, bt, genExtension(realHeader, us.stateContext), Some(adProofs))
+      us = us.applyModifier(fb, None)(_ => ()).get
+      fb
+    }
+    // create new genesis state
+    var us2 = createUtxoState(BoxHolder(Seq(genesisEmissionBox)), parameters)
+    val stateReader = us2.getReader.asInstanceOf[UtxoState]
+    // parallel thread that generates proofs
+    val f = Future {
+      (0 until 1000) foreach { _ =>
+        Try {
+          val boxes = stateReader.randomBox().toSeq
+          val txs = validTransactionsFromBoxes(400, boxes, new RandomWrapper)._1
+          stateReader.proofsForTransactions(txs).get
+        }
+      }
+    }
+    // apply chain of headers full block to state
+    chain.foreach { fb =>
+      us2 = us2.applyModifier(fb, None)(_ => ()).get
+    }
+    Await.result(f, Duration.Inf)
+
+} // loop
+
+  }
+
+// ------------------------------------------------------------------------------------------------  
 
   property("Founders box workflow") {
     var (us, bh) = createUtxoState(settings)
