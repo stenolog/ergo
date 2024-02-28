@@ -12,6 +12,7 @@ import org.scalatest.matchers.should.Matchers
 import scala.async.Async
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, blocking}
+import scala.sys.process.Process
 import scala.util.Try
 
 class ForkResolutionSpec extends AnyFlatSpec with Matchers with IntegrationSuite with Eventually {
@@ -29,6 +30,9 @@ class ForkResolutionSpec extends AnyFlatSpec with Matchers with IntegrationSuite
 
   val dirs: Seq[File] = localVolumes.map(vol => new File(vol))
   dirs.foreach(_.mkdirs())
+  localVolumes.foreach(
+    x => log.info(Process(s"chmod -R 777 $x").!!)
+  )
 
   val minerConfig: Config = nodeSeedConfigs.head
   val onlineMiningNodesConfig: List[Config] = nodeSeedConfigs.slice(1, nodesQty)
@@ -48,7 +52,7 @@ class ForkResolutionSpec extends AnyFlatSpec with Matchers with IntegrationSuite
     implicit val patienceConfig: PatienceConfig = PatienceConfig((nodeConfigs.size * 2).seconds, 3.second)
     blocking(Thread.sleep(nodeConfigs.size * 2000))
     eventually {
-      Await.result(Future.traverse(nodes.get)(_.waitForStartup), nodeConfigs.size.seconds)
+      Await.result(Future.traverse(nodes.get)(_.waitForStartup), 180.seconds)
     }
   }
 
@@ -59,6 +63,9 @@ class ForkResolutionSpec extends AnyFlatSpec with Matchers with IntegrationSuite
   // 4. Kill all nodes again and restart with `knownPeers` filled, wait another {syncLength} blocks;
   // 5. Check that nodes reached consensus on created forks;
   it should "Fork resolution after isolated mining" in {
+
+    log.info(minerConfig.toString)
+    onlineMiningNodesConfig.foreach(x => log.info(x.toString))
 
     val nodes: List[Node] = startNodesWithBinds(minerConfig +: onlineMiningNodesConfig)
 

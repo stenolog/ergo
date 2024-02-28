@@ -47,7 +47,7 @@ class OpenApiSpec extends AnyFlatSpec with IntegrationSuite {
           ApiCheckerConfig(apiAddressToCheck, specFilePath, paramsFilePath)
         ).get
 
-        docker.waitContainer(checker.containerId).statusCode shouldBe 0
+        docker.waitContainer(checker.containerId).awaitStatusCode() shouldBe 0
       }
 
     Await.result(result, 2.minutes)

@@ -5,7 +5,7 @@ import com.typesafe.config.Config
 import org.ergoplatform.it.container.{IntegrationSuite, Node}
 import org.ergoplatform.nodeView.history.ErgoHistoryUtils
 import org.scalatest.freespec.AnyFreeSpec
-
+import scala.sys.process._
 import scala.async.Async
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
@@ -23,24 +23,31 @@ class DeepRollBackSpec extends AnyFreeSpec with IntegrationSuite {
 
   val (dirA, dirB) = (new File(localVolumeA), new File(localVolumeB))
   dirA.mkdirs(); dirB.mkdirs()
+  List(localVolumeA, localVolumeB).foreach(
+    x => log.info(Process(s"chmod -R 777 $x").!!)
+  )
 
   val minerAConfig: Config = specialDataDirConfig(remoteVolumeA)
     .withFallback(shortInternalMinerPollingInterval)
     .withFallback(keepVersionsConfig(keepVersions))
     .withFallback(nodeSeedConfigs.head)
+    .withFallback(localOnlyConfig)
 
   val minerBConfig: Config = specialDataDirConfig(remoteVolumeB)
     .withFallback(shortInternalMinerPollingInterval)
     .withFallback(keepVersionsConfig(keepVersions))
     .withFallback(nodeSeedConfigs.last)
+    .withFallback(localOnlyConfig)
 
   val minerAConfigNonGen: Config = minerAConfig
     .withFallback(nonGeneratingPeerConfig)
+    .withFallback(localOnlyConfig)
 
   val minerBConfigNonGen: Config = minerBConfig
     .withFallback(nonGeneratingPeerConfig)
+    .withFallback(localOnlyConfig)
 
-  "Deep rollback handling" ignore {
+  "Deep rollback handling" in {
 
     val result: Future[Unit] = Async.async {
 
@@ -102,7 +109,8 @@ class DeepRollBackSpec extends AnyFreeSpec with IntegrationSuite {
       minerBBestBlock shouldEqual minerABestBlock
     }
 
-    Await.result(result, 25.minutes)
+//    Await.result(result, 25.minutes)
+    Await.result(result, 15.minutes)
   }
 
 }

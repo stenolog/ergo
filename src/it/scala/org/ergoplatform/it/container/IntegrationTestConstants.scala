@@ -121,4 +121,9 @@ trait IntegrationTestConstants extends ErgoTestConstants {
      """.stripMargin
   )
 
+  val localOnlyConfig: Config = ConfigFactory.parseString(
+    """
+      |scorex.network.localOnly = true
+    """.stripMargin
+  )
 }
