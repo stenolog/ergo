@@ -86,6 +86,8 @@ Ensure that the project can be built with sbt before opening it in an IDE. You m
 
 To open the project in IntelliJ IDEA, select File / Open and navigate to the project folder. This will initiate the Project Import Wizard, which uses the SBT configuration (build.sbt file) to generate the project configuration files for IDEA. You can view the project configuration in the `File / Project Structure...` dialog. If the import is successful, you should be able to compile the project in the IDE. 
 
+Using IntelliJ IDEA be sure to set Build Tools / sbt -> `sbt shell` / `use for` / builds, to avoid compilation errors
+
 ## Contributing to Ergo
 
 Ergo is an open-source project and we welcome contributions from developers and testers! Join the discussion on [Ergo Discord](https://discord.gg/kj7s7nb) in the #development channel and check out our [Contributing documentation](https://docs.ergoplatform.com/contribute/).
