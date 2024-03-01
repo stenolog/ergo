@@ -177,7 +177,6 @@ dockerfile in docker := {
   val configDevNet = (resourceDirectory in IntegrationTest).value / "devnetTemplate.conf"
   val configTestNet = (resourceDirectory in IntegrationTest).value / "testnetTemplate.conf"
   val configMainNet = (resourceDirectory in IntegrationTest).value / "mainnetTemplate.conf"
-  val libLevelDb = (resourceDirectory in IntegrationTest).value / "libleveldbjni.so"
 
   new Dockerfile {
     from("openjdk:11-jre-slim")
