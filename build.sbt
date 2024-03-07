@@ -185,7 +185,7 @@ dockerfile in docker := {
     add(Seq(configDevNet), "/opt/ergo")
     add(Seq(configTestNet), "/opt/ergo")
     add(Seq(configMainNet), "/opt/ergo")
-    add(Seq(libLevelDb), "/opt/ergo")
+    //add(Seq(libLevelDb), "/opt/ergo")
   }
 }
 
