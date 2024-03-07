@@ -94,6 +94,6 @@ jobs:
       - name: Build it2 tests
         run: sbt -Denv=test ++${{ matrix.scala }} it2:compile
       - name: Runs it tests
-        run: sbt -Denv=test clean ++${{ matrix.scala }} it:test
+        run: sudo sbt -Denv=test clean ++${{ matrix.scala }} it:test
       - name: Runs node tests
         run: sbt -Denv=test clean ++${{ matrix.scala }} test
